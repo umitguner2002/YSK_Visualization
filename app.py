@@ -10,7 +10,6 @@ from selenium.webdriver.common.by import By
 import pandas as pd
 import io
 
-
 app = Flask(__name__)
 
 def fetch():
@@ -25,12 +24,14 @@ def fetch():
 
     wait = WebDriverWait(browser, 10)
     wait.until(EC.visibility_of_element_located((By.ID, "myModalClose")))
-    browser.find_element(By.XPATH, "//button[@aria-label='Close'][1]").click()
+    browser.find_element(By.XPATH, "//button[@aria-label='Close']").click() #Close modalPage
+    browser.find_element(By.XPATH, "//a[@id='navbarDropdown']").click() #Click Choose Election
+    browser.find_element(By.XPATH, "//a[@data-target='#collapse6']").click()  # Click Choose Election
+    browser.find_element(By.XPATH, "//div[@aria-labelledby='heading6'][3]").click()
+    e = browser.find_element(By.XPATH, "//a[@class ='nav-link'][8]")
+    print(e.text)
 
-
-    # browser.find_element(By.LINK_TEXT, " Seçim Seçiniz ").click()
-
-
+    time.sleep(5)
 
 @app.route("/")
 def main():
