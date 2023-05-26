@@ -24,27 +24,15 @@ def fetch():
     browser.get(link)
 
     wait = WebDriverWait(browser, 30)
-<<<<<<< HEAD
     wait.until(ec.visibility_of_element_located((By.ID, "myModalClose")))
-=======
-    wait.until(EC.visibility_of_element_located((By.ID, "myModalClose")))
->>>>>>> 8f76e483b9ab8ca3c9af158719a2469ae6ec7480
     browser.find_element(By.XPATH, "//button[@aria-label='Close']").click() #Close modalPage
     browser.find_element(By.XPATH, "//a[@id='navbarDropdown']").click() #Click Choose Election
     browser.find_element(By.XPATH, "//a[@data-target='#collapse6']").click()  # Click Choose Election
     browser.find_element(By.XPATH, "//div[@aria-labelledby='heading6'][1]").click()
 
-<<<<<<< HEAD
     wait.until(ec.visibility_of_element_located((By.CLASS_NAME, "nav-link")))
-    browser.find_element(By.XPATH, "//a[@href='/secim-sonuc-istatistik/secim-sonuc']").click()
+    browser.find_element(By.XPATH, "//a[@href='/secim-sonuc-istatistik/secim-sonuc']").click()   
 
-    try:
-        wait.until(ec.visibility_of_element_located((By.CLASS_NAME, "country-svg")))
-        file_path = "C:\\Users\\umitg\\Downloads\\SecimSonucIl.json"
-        if not os.path.exists(file_path):
-            browser.find_element(By.XPATH, "//button[@class='btn btn-sm btn-outline-dark mr-2'][2]").click()
-            time.sleep(5)
-=======
     wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "nav-link")))
     browser.find_element(By.XPATH, "//a[@href='/secim-sonuc-istatistik/secim-sonuc']").click()
 
@@ -53,9 +41,7 @@ def fetch():
         file_path = "C:\\Users\\umitg\\Downloads\\SecimSonucIl.json"
         if not os.path.exists(file_path):
             browser.find_element(By.XPATH, "//button[@class='btn btn-sm btn-outline-dark mr-2'][2]").click()
-            wait.until(new Fun)
-            # time.sleep(5)
->>>>>>> 8f76e483b9ab8ca3c9af158719a2469ae6ec7480
+            time.sleep(5)
             print("Json File is downloaded...")
         else:
             print("Json File is already exist...")
@@ -68,7 +54,6 @@ def fetch():
 def main():
     fetch()
     return "aaaa"
-
 
 if __name__ == "__main__":
     app.run()
