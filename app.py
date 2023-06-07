@@ -8,9 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import Select
 import pandas as pd
-import io
 
 app = Flask(__name__)
 
@@ -23,67 +21,125 @@ def fetch():
     browser = webdriver.Chrome(service=service, options=options)
     link = "https://acikveri.ysk.gov.tr/"
 
-    browser.get(link)
+    il_file_path = "SecimSonucIl.json"
+    ilce_file_path = "SecimSonucIlce.json"
+    not_exist_ilce_json = []
 
-    wait = WebDriverWait(browser, 30)
+    for ilce_file_index in range(0, 81):
+        ilce_file_path = "SecimSonucIlce (" + str(ilce_file_index) + ").json"
+        if not os.path.exists(il_file_path):
+            not_exist_ilce_json.append(ilce_file_index + 1)
 
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Close']"))).click() #Close modalPage
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@id='navbarDropdown']"))).click() #Click Choose Election
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@data-target='#collapse6']"))).click()  #
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//div[@aria-labelledby='heading6'][1]"))).click()
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@href='/secim-sonuc-istatistik/secim-sonuc']"))).click()
+    if os.path.exists(il_file_path) and len(not_exist_ilce_json) == 0:
+        print("SecimSonucIl.json is already exist...")
+        print("81 SecimSonucIlce.json is already exist...")
+    else:
+        browser.get(link)
 
-    wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@class='country-svg']")))
-    # browser.find_element(By.XPATH, "//div[@role='combobox']//input").click()
+        wait = WebDriverWait(browser, 10)
 
-    try:
-        wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "country-svg")))
-        file_path="C:/Users/umitg/Downloads/SecimSonucIl.json"
-        if not os.path.exists(file_path):
-            wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@class='btn btn-sm btn-outline-dark mr-2'][2]"))).click()
-            time.sleep(10)
+        wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Close']"))).click()  # Close ModalPage
+        wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@id='navbarDropdown']"))).click()  # Choose Election
+        wait.until(
+            EC.element_to_be_clickable((By.XPATH, "//a[@data-target='#collapse6']"))).click()  # Presidential Election
+        wait.until(EC.element_to_be_clickable((By.XPATH,
+                                               "//div[@aria-labelledby='heading6']//*[text()=' CUMHURBAŞKANI VE 27.DÖNEM MİLLETVEKİLİ GENEL SEÇİMİ (24 Haziran 2018) ']"))).click()
+        wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "//a[@href='/secim-sonuc-istatistik/secim-sonuc']"))).click()  # Presidential Election Results
+
+        try:
+            wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "country-svg")))
+            wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()=' Json İndir '][1]"))).click()
+            time.sleep(3)
             print("SecimSonucIl.json is downloaded...")
-        else:
-            print("SecimSonucIl.json is already exist...")
-    except Exception as err:
-        print(err)
-    finally:
-        browser.close()
 
-    df = pd.read_json(file_path)
-    df.columns = ['Plaka', 'İl', 'Kayıtlı Seçmen Sayısı', 'Oy Kullanan Seçmen Sayısı',
-                  'Geçerli Oy Toplamı', 'MUHARREM İNCE', 'MERAL AKŞENER',
-                  'RECEP TAYYİP ERDOĞAN', 'SELAHATTİN DEMİRTAŞ',
-                  'TEMEL KARAMOLLAOĞLU', 'DOĞU PERİNÇEK']
+            cities = []
 
-    df = df.drop(df.index[df.index % 2 != 0])
+            for i in not_exist_ilce_json:
+                city_name_xpath = "//div[@id='map']//*[@class='text-dark'][" + str(i) + "]"
+                wait.until(EC.presence_of_element_located((By.XPATH, city_name_xpath)))
+                c = browser.find_element(By.XPATH, city_name_xpath)  # Select city name text on map
+                cities.append(c.text)  # Append city name in list
 
-    return df
+            if len(cities) > 0:
+                for city in cities:
+                    wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@class='country-svg']")))
+                    strXpath = "//*[text()='" + city + "'][1]"
+                    wait.until(
+                        EC.presence_of_element_located((By.XPATH, strXpath))).click()  # Click the city in the list
+                    wait.until(EC.element_to_be_clickable(
+                        (By.XPATH, "//button[text()=' Json İndir '][1]"))).click()  # Click 'Json İndir' for District
+                    time.sleep(3)
+                    wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()=' Geri ']"))).click()
 
-def GetData(data):
-    data['Geçerli Oy Toplamı'] = data['Geçerli Oy Toplamı'].str.replace('.', '').astype(int)
-    data['MUHARREM İNCE'] = data['MUHARREM İNCE'].str.replace('.', '').astype(int)
-    data['MERAL AKŞENER'] = data['MERAL AKŞENER'].str.replace('.', '').astype(int)
-    data['RECEP TAYYİP ERDOĞAN'] = data['RECEP TAYYİP ERDOĞAN'].str.replace('.', '').astype(int)
-    data['SELAHATTİN DEMİRTAŞ'] = data['SELAHATTİN DEMİRTAŞ'].str.replace('.', '').astype(int)
-    data['TEMEL KARAMOLLAOĞLU'] = data['TEMEL KARAMOLLAOĞLU'].str.replace('.', '').astype(int)
-    data['DOĞU PERİNÇEK'] = data['DOĞU PERİNÇEK'].str.replace('.', '').astype(int)
+        except Exception as err:
+            print(err)
+        finally:
+            browser.close()
 
-    return data
+
+    il_file_path = "SecimSonucIl.json"
+    df_il = pd.read_json(il_file_path)
+    df_il.columns = ['City ID', 'City', 'Registered Voter', 'Current Voter',
+                  'Valid Vote', 'Muharrem İnce', 'Meral Akşener',
+                  'Recep Tayyip Erdoğan', 'Selahattin Demirtaş',
+                  'Temel Karamollaoğlu', 'Doğu Perinçek']
+
+    df_il = df_il.drop(df_il.index[df_il.index % 2 != 0])
+    df_il['City ID'] = df_il['City ID'].astype('int')
+
+    df_temp = pd.DataFrame()
+    df_ilce = pd.DataFrame()
+
+    for i in range(81):
+        ilce_file_path = "SecimSonucIlce (" + str(i) + ").json"
+        df_temp = pd.read_json(ilce_file_path)
+        df_temp = df_temp.drop(columns=["Belde Adı", "Mahaller Bazlı Veri İndir"])
+        df_temp['İlçe Id'] = pd.to_numeric(df_temp['İlçe Id'], errors='coerce')
+        df_temp = df_temp.dropna(subset=['İlçe Id'])
+        df_temp['İlçe Id'] = df_temp['İlçe Id'].astype('int')
+        df_temp['İl Id'] = i + 1
+        df_ilce = pd.concat([df_ilce, df_temp], ignore_index=True)
+
+    df_ilce.columns = ['ID', 'District', 'Registered Voter', 'Current Voter',
+                     'Valid Vote', 'Muharrem İnce', 'Meral Akşener',
+                     'Recep Tayyip Erdoğan', 'Selahattin Demirtaş',
+                     'Temel Karamollaoğlu', 'Doğu Perinçek', 'City Id']
+
+    df_ilce['City Id']=df_ilce['City Id'].astype('int')
+
+    return df_il, df_ilce
+
+def getData(data):
+    df_data_vote=pd.DataFrame()
+    df_data_vote['Muharrem İnce'] = data['Muharrem İnce'].str.replace('.', '').astype(int)
+    df_data_vote['Meral Akşener'] = data['Meral Akşener'].str.replace('.', '').astype(int)
+    df_data_vote['Recep Tayyip Erdoğan'] = data['Recep Tayyip Erdoğan'].str.replace('.', '').astype(int)
+    df_data_vote['Selahattin Demirtaş'] = data['Selahattin Demirtaş'].str.replace('.', '').astype(int)
+    df_data_vote['Temel Karamollaoğlu'] = data['Temel Karamollaoğlu'].str.replace('.', '').astype(int)
+    df_data_vote['Doğu Perinçek'] = data['Doğu Perinçek'].str.replace('.', '').astype(int)
+
+    sum_data = df_data_vote.sum()
+
+    sum_votes=[]
+    for sd in sum_data:
+        sum_votes.append(sd)
+
+    return sum_votes
 
 @app.route("/")
 def main():
-    df_main = fetch()
-    data_main = GetData(df_main)
-    election_result={}
-    for x in range(4,len(data_main.columns)):
-        election_result={data_main}
+    df_il_main, df_ilce_main = fetch()
+    votes = getData(df_il_main)
+
 
     return render_template("index.html",
-                           sumOfVotes="{:,.0f}".format(data_main['Geçerli Oy Toplamı'].sum()).replace(',', '.'),
-                           cand1_name=data_main.columns[5],
-                           cand1_votes="{:.0f}".format(data_main['MUHARREM İNCE'].sum()).replace(',', '.'),
-                           content=df_main.to_html()
+                           title="2018 Presidential Election Results",
+                           il_results_headers=df_il_main.columns,
+                           il_results=df_il_main.values,
+                           ilce_results_headers=df_ilce_main.columns,
+                           ilce_results=df_ilce_main.values,
+                           votes=votes
                            )
 
 if __name__ == "__main__":
