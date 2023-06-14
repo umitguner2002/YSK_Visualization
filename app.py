@@ -1,7 +1,9 @@
 import os.path
+import random
 import time
+import numpy as np
 
-from flask import Flask, render_template
+from flask import Flask, render_template, request, jsonify
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -13,69 +15,69 @@ import pandas as pd
 app = Flask(__name__)
 
 def fetch():
-    options = webdriver.ChromeOptions()
-    #options.add_argument("--headless")
-    options.add_argument("--ignore-certificate-errors")
-    options.add_argument("--incognito")
-    service = Service(ChromeDriverManager().install())
-    browser = webdriver.Chrome(service=service, options=options)
-    link = "https://acikveri.ysk.gov.tr/"
-
-    il_file_path = "SecimSonucIl.json"
-    ilce_file_path = "SecimSonucIlce.json"
-    not_exist_ilce_json = []
-
-    for ilce_file_index in range(0, 81):
-        ilce_file_path = "SecimSonucIlce (" + str(ilce_file_index) + ").json"
-        if not os.path.exists(il_file_path):
-            not_exist_ilce_json.append(ilce_file_index + 1)
-
-    if os.path.exists(il_file_path) and len(not_exist_ilce_json) == 0:
-        print("SecimSonucIl.json is already exist...")
-        print("81 SecimSonucIlce.json is already exist...")
-    else:
-        browser.get(link)
-
-        wait = WebDriverWait(browser, 10)
-
-        wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Close']"))).click()  # Close ModalPage
-        wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@id='navbarDropdown']"))).click()  # Choose Election
-        wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//a[@data-target='#collapse6']"))).click()  # Presidential Election
-        wait.until(EC.element_to_be_clickable((By.XPATH,
-                                               "//div[@aria-labelledby='heading6']//*[text()=' CUMHURBAŞKANI VE 27.DÖNEM MİLLETVEKİLİ GENEL SEÇİMİ (24 Haziran 2018) ']"))).click()
-        wait.until(EC.element_to_be_clickable(
-            (By.XPATH, "//a[@href='/secim-sonuc-istatistik/secim-sonuc']"))).click()  # Presidential Election Results
-
-        try:
-            wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "country-svg")))
-            wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()=' Json İndir '][1]"))).click()
-            time.sleep(3)
-            print("SecimSonucIl.json is downloaded...")
-
-            cities = []
-
-            for i in not_exist_ilce_json:
-                city_name_xpath = "//div[@id='map']//*[@class='text-dark'][" + str(i) + "]"
-                wait.until(EC.presence_of_element_located((By.XPATH, city_name_xpath)))
-                c = browser.find_element(By.XPATH, city_name_xpath)  # Select city name text on map
-                cities.append(c.text)  # Append city name in list
-
-            if len(cities) > 0:
-                for city in cities:
-                    wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@class='country-svg']")))
-                    strXpath = "//*[text()='" + city + "'][1]"
-                    wait.until(
-                        EC.presence_of_element_located((By.XPATH, strXpath))).click()  # Click the city in the list
-                    wait.until(EC.element_to_be_clickable(
-                        (By.XPATH, "//button[text()=' Json İndir '][1]"))).click()  # Click 'Json İndir' for District
-                    time.sleep(3)
-                    wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()=' Geri ']"))).click()
-
-        except Exception as err:
-            print(err)
-        finally:
-            browser.close()
+    # options = webdriver.ChromeOptions()
+    # #options.add_argument("--headless")
+    # options.add_argument("--ignore-certificate-errors")
+    # options.add_argument("--incognito")
+    # service = Service(ChromeDriverManager().install())
+    # browser = webdriver.Chrome(service=service, options=options)
+    # link = "https://acikveri.ysk.gov.tr/"
+    #
+    # il_file_path = "SecimSonucIl.json"
+    # ilce_file_path = "SecimSonucIlce.json"
+    # not_exist_ilce_json = []
+    #
+    # for ilce_file_index in range(0, 81):
+    #     ilce_file_path = "SecimSonucIlce (" + str(ilce_file_index) + ").json"
+    #     if not os.path.exists(il_file_path):
+    #         not_exist_ilce_json.append(ilce_file_index + 1)
+    #
+    # if os.path.exists(il_file_path) and len(not_exist_ilce_json) == 0:
+    #     print("SecimSonucIl.json is already exist...")
+    #     print("81 SecimSonucIlce.json is already exist...")
+    # else:
+    #     browser.get(link)
+    #
+    #     wait = WebDriverWait(browser, 10)
+    #
+    #     wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Close']"))).click()  # Close ModalPage
+    #     wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@id='navbarDropdown']"))).click()  # Choose Election
+    #     wait.until(
+    #         EC.element_to_be_clickable((By.XPATH, "//a[@data-target='#collapse6']"))).click()  # Presidential Election
+    #     wait.until(EC.element_to_be_clickable((By.XPATH,
+    #                                            "//div[@aria-labelledby='heading6']//*[text()=' CUMHURBAŞKANI VE 27.DÖNEM MİLLETVEKİLİ GENEL SEÇİMİ (24 Haziran 2018) ']"))).click()
+    #     wait.until(EC.element_to_be_clickable(
+    #         (By.XPATH, "//a[@href='/secim-sonuc-istatistik/secim-sonuc']"))).click()  # Presidential Election Results
+    #
+    #     try:
+    #         wait.until(EC.visibility_of_element_located((By.CLASS_NAME, "country-svg")))
+    #         wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()=' Json İndir '][1]"))).click()
+    #         time.sleep(3)
+    #         print("SecimSonucIl.json is downloaded...")
+    #
+    #         cities = []
+    #
+    #         for i in not_exist_ilce_json:
+    #             city_name_xpath = "//div[@id='map']//*[@class='text-dark'][" + str(i) + "]"
+    #             wait.until(EC.presence_of_element_located((By.XPATH, city_name_xpath)))
+    #             c = browser.find_element(By.XPATH, city_name_xpath)  # Select city name text on map
+    #             cities.append(c.text)  # Append city name in list
+    #
+    #         if len(cities) > 0:
+    #             for city in cities:
+    #                 wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@class='country-svg']")))
+    #                 strXpath = "//*[text()='" + city + "'][1]"
+    #                 wait.until(
+    #                     EC.presence_of_element_located((By.XPATH, strXpath))).click()  # Click the city in the list
+    #                 wait.until(EC.element_to_be_clickable(
+    #                     (By.XPATH, "//button[text()=' Json İndir '][1]"))).click()  # Click 'Json İndir' for District
+    #                 time.sleep(3)
+    #                 wait.until(EC.element_to_be_clickable((By.XPATH, "//button[text()=' Geri ']"))).click()
+    #
+    #     except Exception as err:
+    #         print(err)
+    #     finally:
+    #         browser.close()
 
 
     il_file_path = "SecimSonucIl.json"
@@ -141,6 +143,12 @@ def main():
                            ilce_results=df_ilce_main.values,
                            votes=votes
                            )
+
+@app.route("/deneme")
+def deneme():
+    x = np.random.randint(100000, 35000000, 6).tolist()
+    return x
+
 
 if __name__ == "__main__":
     app.run()
